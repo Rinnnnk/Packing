@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "packing-service"
+version = "0.1.0"
+description = "定制家居工厂智能板材分拣与装箱打包系统"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    # 后续接入 FastAPI 时在此追加：
+    # "fastapi>=0.110",
+    # "uvicorn[standard]>=0.29",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+# 显式声明测试根目录，配合 tests/__init__.py，
+# 保证无论从哪个工作目录执行 pytest，sys.path 解析都一致
+testpaths = ["tests"]
