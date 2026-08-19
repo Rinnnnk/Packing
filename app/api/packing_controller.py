@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+packing_controller.py - 打包系统 RESTful API 路由
+"""
 from fastapi import APIRouter, UploadFile, File
 from app.common.result import JsonResult
 from app.dto.packing_dto import BoardScanDto
@@ -9,13 +12,14 @@ router = APIRouter(prefix="/api/packing", tags=["智能板材装箱打包接口"
 service = PackingService()
 
 
-@router.post("/order/import/post", response_model=JsonResult[OrderSummaryVo], summary="导入工厂Excel生成打包排版方案")
+@router.post("/order/import/post", response_model=JsonResult[OrderSummaryVo], summary="导入工厂工单文件生成打包排版方案")
 async def order_import_post(file: UploadFile = File(...)):
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        return JsonResult.error("仅支持上传 Excel 格式文件 (.xlsx / .xls)")
+    filename_lower = file.filename.lower()
+    if not filename_lower.endswith(('.xlsx', '.xls', '.csv')):
+        return JsonResult.error("仅支持上传 Excel 或 CSV 文件 (.xlsx / .xls / .csv)")
     try:
         content = await file.read()
-        res_vo = service.import_excel_and_pack(content, file.filename)
+        res_vo = service.import_file_and_pack(content, file.filename)
         return JsonResult.success(data=res_vo, message="工单解析与打包规划完成")
     except Exception as e:
         return JsonResult.error(message=f"打包排版计算失败: {str(e)}", code=400)
