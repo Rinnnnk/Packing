@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 engine.py - 业务调度总控
-优化特性：多维模数分桶排序策略池、多目标打分收敛、双向超界校验与早停剪枝
+优化特性：大单板母板优先调度、模数分桶与长宽比分流、多目标打分收敛与早停剪枝
 """
 import math
 import time
@@ -16,7 +16,7 @@ class FurniturePackingEngine:
         self.config = config or PackingConfig()
 
     def pack_boards(self, boards: List[Board]) -> Dict:
-        """主入口：按房间强隔离分流打包并输出完整统计摘要"""
+        """主入口：按房间强隔离分流打包并输出统计摘要"""
         start_t = time.time()
         room_groups: Dict[str, List[Board]] = {}
         for b in boards:
@@ -53,11 +53,10 @@ class FurniturePackingEngine:
         }
 
     def _pack_single_room(self, room_id: str, boards: List[Board], start_pkg_id: int) -> Tuple[List[Package], int]:
-        """单房间核心打包逻辑"""
         packages: List[Package] = []
         pkg_id = start_pkg_id
 
-        # 1. 物理设备极限校验与超重大板 (>50kg) 独立打包
+        # 1. P1 物理极值拦截 & 超重大板 (>50kg) 独立打包
         normal_boards: List[Board] = []
         for b in boards:
             fit_orig = (b.length <= self.config.max_length and b.width <= self.config.max_width)
@@ -92,21 +91,14 @@ class FurniturePackingEngine:
         best_set: Optional[List[Package]] = None
         best_score = float('inf')
 
-        # 2. 多维启发式排序策略池 (解决长短混拼与尺寸失配)
+        # 2. 多维启发式排序策略池 (面积优先作为托底母板，模数分桶与长宽比分流)
         sort_strategies = [
-            # 策略 1: 长度模数(200mm) + 宽度模数(100mm) + 面积 (模数优先)
-            lambda b: (b.length // 200 * 200, b.width // 100 * 100, b.length * b.width),
-            # 策略 2: 长宽比>=3.5 窄条与宽板分流聚类 + 长度优先
-            lambda b: ((b.length / max(1, b.width) >= 3.5), b.length // 150 * 150, b.length * b.width),
-            # 策略 3: 长度绝对优先 + 面积
-            lambda b: (b.length, b.length * b.width),
-            # 策略 4: 面积优先 + 长度
             lambda b: (b.length * b.width, b.length),
-            # 策略 5: 单板重量优先 + 面积 (逼近 50kg 背包)
+            lambda b: (b.length // 200 * 200, b.width // 100 * 100, b.length * b.width),
+            lambda b: (b.length, b.length * b.width),
             lambda b: (b.weight_g, b.length * b.width),
-            # 策略 6: 周长优先 + 面积
+            lambda b: ((b.length / max(1, b.width) < 3.0), b.length * b.width, b.length),
             lambda b: (b.length + b.width, b.length * b.width),
-            # 策略 7: 细粒度模数 (100mm x 50mm)
             lambda b: (b.length // 100 * 100, b.width // 50 * 50, b.length * b.width),
         ]
 
@@ -118,7 +110,7 @@ class FurniturePackingEngine:
             cur_pkg_id = pkg_id
 
             while unplaced:
-                # 尝试 4 层包 (若剩余板件 >= 4 且无单板大重件)
+                # 尝试 4 层包 (母板托底或散料复合底座)
                 if len(unplaced) >= 4 and unplaced[0].weight_kg < self.config.heavy_board_solo_kg:
                     builder4 = True3DPackageBuilder(4, self.config)
                     placed_b, rem_b = self._fill_builder(builder4, unplaced)
@@ -131,7 +123,7 @@ class FurniturePackingEngine:
                         unplaced.sort(key=strat, reverse=True)
                         continue
 
-                # 尝试 2 层包 (若剩余板件 >= 2)
+                # 尝试 2 层包
                 if len(unplaced) >= 2:
                     builder2 = True3DPackageBuilder(2, self.config)
                     placed_b, rem_b = self._fill_builder(builder2, unplaced)
@@ -157,7 +149,7 @@ class FurniturePackingEngine:
             avg_util = sum(p.space_utilization for p in cur_pkgs) / len(cur_pkgs) if cur_pkgs else 0
             
             # 多目标打分：总包数少 > 消除1层散包 > 提高空间利用率
-            score = len(cur_pkgs) * 1000 + one_layer_count * 250 - avg_util * 600
+            score = len(cur_pkgs) * 1000 + one_layer_count * 300 - avg_util * 600
 
             if score < best_score:
                 best_score = score
