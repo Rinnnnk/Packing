@@ -1,44 +1,55 @@
 <template>
-  <header class="h-16 bg-industrial-900 border-b border-industrial-800 flex items-center justify-between px-6 z-20 shadow-md">
-    <!-- 系统 Logo & 工单编号 -->
+  <header class="h-16 bg-[#14161f]/80 backdrop-blur-2xl border-b border-white/[0.08] shadow-glass-sm flex items-center justify-between px-6 z-20 select-none">
+    <!-- 系统 Logo & 工单关键指标 -->
     <div class="flex items-center space-x-4">
-      <div class="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center font-black text-industrial-950 text-xl shadow-lg shadow-emerald-500/20">
-        P
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-apple-blue to-indigo-500 flex items-center justify-center shadow-md shadow-apple-blue/20 ring-1 ring-white/20">
+        <span class="font-black text-white text-lg font-mono">P</span>
       </div>
       <div>
-        <h1 class="text-base font-bold text-slate-100 leading-tight">智能板材装箱打包作业台</h1>
-        <p class="text-xs text-slate-400">工业 4.0 智能分拣与防呆系统</p>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-sm font-bold text-apple-ink tracking-tight">智能板材装箱打包作业台</h1>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-apple-blue/15 text-apple-blue border border-apple-blue/30">
+            PROD v1.0
+          </span>
+        </div>
+        <p class="text-[11px] text-apple-secondary font-mono">工业 4.0 智能分拣与物理防呆系统</p>
       </div>
-      <div v-if="orderSummary" class="flex items-center space-x-2 pl-4 border-l border-industrial-700">
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-industrial-800 text-emerald-400 border border-industrial-700">
-          {{ orderSummary.order_id }}
-        </span>
-        <span class="text-xs text-slate-400">
-          共 {{ orderSummary.total_boards }} 块 | {{ orderSummary.total_weight_kg }} kg | 利用率 {{ (orderSummary.avg_space_utilization * 100).toFixed(1) }}%
-        </span>
+
+      <!-- 工单状态胶囊 -->
+      <div v-if="orderSummary" class="flex items-center space-x-3 pl-4 ml-2 border-l border-white/[0.08]">
+        <div class="flex items-center space-x-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono font-bold text-apple-ink shadow-inner">
+          <span class="w-2 h-2 rounded-full bg-apple-green animate-pulse"></span>
+          <span class="text-apple-green">{{ orderSummary.order_id }}</span>
+        </div>
+        <div class="flex items-center space-x-3 text-xs text-apple-secondary font-mono">
+          <span>共 <strong class="text-apple-ink font-semibold">{{ orderSummary.total_boards }}</strong> 块</span>
+          <span class="text-white/15">/</span>
+          <span><strong class="text-apple-ink font-semibold">{{ orderSummary.total_weight_kg.toFixed(1) }}</strong> kg</span>
+          <span class="text-white/15">/</span>
+          <span>利用率 <strong class="text-apple-green font-bold text-[13px]">{{ (orderSummary.avg_space_utilization * 100).toFixed(1) }}%</strong></span>
+        </div>
       </div>
     </div>
 
-    <!-- 硬件状态与工单导入 -->
-    <div class="flex items-center space-x-5">
-      <div class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-industrial-850 border border-industrial-800 text-xs">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-slate-300 font-medium">HID 扫码枪就绪</span>
+    <!-- 硬件状态与导入按钮 -->
+    <div class="flex items-center space-x-3.5">
+      <!-- 扫码枪雷达状态指示 -->
+      <div class="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] shadow-glass-sm text-xs">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-apple-green"></span>
+        </span>
+        <span class="text-apple-ink font-medium tracking-tight text-[11px]">USB HID 扫码枪就绪</span>
       </div>
 
-      <input
-        type="file"
-        ref="fileInputRef"
-        accept=".xlsx,.xls,.csv"
-        class="hidden"
-        @change="onFileSelected"
-      />
+      <!-- 导入工单按钮 -->
+      <input type="file" ref="fileInputRef" accept=".xlsx,.xls,.csv" class="hidden" @change="onFileSelected" />
       <button
         @click="fileInputRef?.click()"
         :disabled="isLoading"
-        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white rounded-lg text-sm font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-2"
+        class="px-4 py-2 bg-apple-blue hover:bg-blue-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-apple-blue/25 flex items-center space-x-2 ring-1 ring-white/20"
       >
-        <span v-if="isLoading" class="animate-spin text-xs">⏳</span>
+        <span v-if="isLoading" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
         <span>{{ isLoading ? '正在排样计算...' : '导入工单文件' }}</span>
       </button>
     </div>
@@ -64,7 +75,6 @@ const onFileSelected = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (file) {
     emit('fileSelected', file);
-    // 重置 input 以允许重复上传同名文件
     if (fileInputRef.value) fileInputRef.value.value = '';
   }
 };

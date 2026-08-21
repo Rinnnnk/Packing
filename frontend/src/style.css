@@ -2,24 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-industrial-950 text-slate-100 overflow-hidden antialiased select-none font-sans;
-  }
+/* Apple macOS Dark 深色舞台与柔和环境光 */
+body {
+  background-color: #0d0f14;
+  color: #f5f5f7;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Helvetica Neue", Inter, sans-serif;
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(10, 132, 255, 0.08) 0px, transparent 45%),
+    radial-gradient(at 85% 15%, rgba(48, 209, 88, 0.06) 0px, transparent 45%),
+    radial-gradient(at 50% 85%, rgba(94, 92, 230, 0.07) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
-/* 自定义工业滚动条 */
+/* macOS 极细深色精致滚动条 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
+
 ::-webkit-scrollbar-track {
-  background: rgba(17, 24, 39, 0.5);
+  background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.6);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.8);
+  background: rgba(255, 255, 255, 0.28);
 }
